@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sungro Master ERP V20.0</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #107c41; /* Excel Green */
+            --dark: #1b5e20;
+            --light: #f3f2f1;
+            --white: #ffffff;
+            --border: #d4d4d4;
+            --danger: #c50f1f;
+            --blue: #0078d4;
+            --warning: #ffaa44;
+            --header-bg: #e6f2ea;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; outline: none; }
+        body { margin: 0; background: var(--light); display: flex; height: 100vh; overflow: hidden; color: #333; }
+
+        /* --- SIDEBAR --- */
+        .sidebar { width: 240px; background: #2b579a; color: white; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
+        .logo { padding: 20px; text-align: center; background: #1e3a6e; font-size: 20px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .menu { flex: 1; padding-top: 10px; overflow-y: auto; }
+        .menu-item { padding: 15px 20px; cursor: pointer; display: flex; align-items: center; transition: 0.2s; border-left: 4px solid transparent; font-size: 15px; }
+        .menu-item:hover { background: rgba(255,255,255,0.1); }
+        .menu-item.active { background: rgba(255,255,255,0.2); border-left-color: #fff; font-weight: 600; }
+        .menu-item i { width: 25px; font-size: 18px; margin-right: 10px; text-align: center; }
+
+        /* --- MAIN --- */
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .top-bar { height: 50px; background: var(--white); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+        .content { flex: 1; padding: 15px; overflow-y: auto; position: relative; }
+        .tab-section { display: none; height: 100%; flex-direction: column; }
+        .tab-section.active { display: flex; }
+
+        /* --- EXCEL GRID UI --- */
+        .excel-toolbar { padding: 10px; background: #f8f9fa; border-bottom: 1px solid #ccc; display: flex; gap: 10px; align-items: center; }
+        .excel-container { background: white; border: 1px solid #ccc; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .grid-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .grid-table th { background: var(--header-bg); border: 1px solid #ccc; padding: 8px 10px; text-align: left; font-weight: 600; position: sticky; top: 0; z-index: 10; }
+        .grid-table td { border: 1px solid #ccc; padding: 5px 10px; }
+        .grid-input { padding: 6px 8px; border: 1px solid #ccc; border-radius: 2px; font-size: 13px; width: 100%; }
+        .grid-input:focus { border-color: var(--primary); outline: 1px solid var(--primary); }
+
+        /* BUTTONS */
+        .btn { padding: 8px 16px; border-radius: 3px; cursor: pointer; font-size: 13px; font-weight: 600; border: none; display: inline-flex; align-items: center; gap: 6px; color: white; transition: 0.2s; }
+        .btn-green { background: var(--primary); } .btn-green:hover { background: var(--dark); }
+        .btn-red { background: var(--danger); } .btn-red:hover { background: #a40e1b; }
+        .btn-blue { background: var(--blue); } .btn-blue:hover { background: #005a9e; }
+        .btn-orange { background: var(--warning); color: #333; }
+
+        /* POS LAYOUT */
+        .pos-container { display: flex; gap: 20px; height: 100%; }
+        .pos-left { flex: 3; display: flex; flex-direction: column; background: white; border: 1px solid #ccc; }
+        .pos-right { flex: 1.2; display: flex; flex-direction: column; gap: 15px; }
+        .cust-bar { padding: 15px; background: #eef2f5; border-bottom: 1px solid #ccc; }
+        
+        .search-results { position: absolute; background: white; border: 1px solid #ccc; width: 100%; max-height: 200px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .search-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .search-item:hover { background: #e3f2fd; }
+
+        /* PAYMENT BOX */
+        .pay-box { background: white; padding: 20px; border: 1px solid #ccc; border-top: 4px solid var(--primary); }
+        .pay-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+        .pay-total { font-size: 26px; font-weight: bold; color: var(--primary); margin: 15px 0; border-top: 1px solid #eee; padding-top: 10px; }
+        
+        /* LOGIC ALERT */
+        .logic-alert { background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 4px; display: none; margin-bottom: 10px; }
+        .logic-btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .logic-btn { flex: 1; padding: 8px; border: 1px solid #ccc; background: white; cursor: pointer; font-size: 12px; font-weight: bold; text-align: center; border-radius: 4px; }
+        .logic-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* STATS CARDS */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card h4 { margin: 0 0 10px; font-size: 12px; color: #666; text-transform: uppercase; }
+        .card .val { font-size: 24px; font-weight: bold; color: #333; }
+
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center; }
+        .modal { background: white; padding: 25px; width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-radius: 4px; }
+
+        /* PRINT */
+        @media print {
+            .sidebar, .top-bar, .excel-toolbar, .no-print { display: none !important; }
+            .content { padding: 0; }
+            #print-area { display: block !important; position: absolute; top: 0; left: 0; width: 100%; background: white; padding: 40px; }
+        }
+        #print-area { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo"><i class="fas fa-leaf"></i> SUNGRO ERP</div>
+        <div class="menu">
+            <div class="menu-item active" onclick="nav('pos')"><i class="fas fa-cash-register"></i> Billing (POS)</div>
+            <div class="menu-item" onclick="nav('udhar')"><i class="fas fa-file-invoice-dollar"></i> Udhar List</div>
+            <div class="menu-item" onclick="nav('stock')"><i class="fas fa-boxes"></i> Inventory</div>
+            <div class="menu-item" onclick="nav('cust')"><i class="fas fa-users"></i> Customers</div>
+            <div class="menu-item" onclick="nav('dash')"><i class="fas fa-chart-line"></i> Dashboard</div>
+            <div class="menu-item" onclick="nav('settings')"><i class="fas fa-cogs"></i> Settings</div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="top-bar">
+            <div style="font-weight:600; font-size:18px; color:var(--primary);">Sungro V20.0 (Master)</div>
+            <div id="date-display" style="font-size:13px; font-weight:600; color:#555;"></div>
+        </div>
+
+        <div class="content">
+
+            <div id="pos" class="tab-section active">
+                <div class="pos-container">
+                    <div class="pos-left">
+                        <div class="cust-bar">
+                            <div style="position:relative; width:100%;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                                    <span style="font-weight:bold; color:#555;">Customer:</span>
+                                    <span id="cust-bal-display" style="font-weight:bold; color:var(--danger);"></span>
+                                </div>
+                                <div style="display:flex; gap:10px;">
+                                    <input type="text" id="pos-search" class="grid-input" placeholder="Search Customer or Phone..." onkeyup="searchCust()" autocomplete="off">
+                                    <input type="hidden" id="selected-cust-id">
+                                    <button id="btn-add-new" class="btn btn-blue" style="display:none;" onclick="quickAddCust()"><i class="fas fa-plus"></i> Add to List</button>
+                                </div>
+                                <div id="search-res" class="search-results"></div>
+                            </div>
+                        </div>
+
+                        <div class="excel-toolbar">
+                            <select id="p-item" class="grid-input" style="flex:2;" onchange="fillPrice()"><option>Select Product</option></select>
+                            <input type="number" id="p-qty" class="grid-input" placeholder="Qty" style="width:70px;" onkeypress="if(event.key==='Enter') addToCart()">
+                            <input type="number" id="p-price" class="grid-input" placeholder="Price" style="width:80px;">
+                            <input type="number" id="p-disc" class="grid-input" placeholder="Disc" style="width:70px;" value="0">
+                            <button class="btn btn-green" onclick="addToCart()">Add</button>
+                        </div>
+                        <div class="excel-container">
+                            <div style="overflow:auto; flex:1;">
+                                <table class="grid-table">
+                                    <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Disc</th><th>Total</th><th>Action</th></tr></thead>
+                                    <tbody id="cart-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pos-right">
+                        <div class="pay-box">
+                            <div class="pay-row"><span>Subtotal:</span> <span id="lbl-sub">0</span></div>
+                            <div class="pay-row"><span>Total Discount:</span> <span id="lbl-disc">0</span></div>
+                            <div class="pay-total">Total: <span id="lbl-total">0</span></div>
+                            
+                            <hr>
+                            <label style="font-size:12px; font-weight:bold;">Paid Amount</label>
+                            <input type="number" id="pay-input" class="grid-input" style="font-size:16px; font-weight:bold; margin-bottom:10px;" oninput="calcLogic()">
+                            
+                            <div id="logic-box" class="logic-alert">
+                                <div id="logic-msg" style="font-size:12px; color:#856404; margin-bottom:5px;"></div>
+                                <div class="logic-btn-group">
+                                    <div class="logic-btn" id="btn-return" onclick="setMode('return')">Return Cash</div>
+                                    <div class="logic-btn" id="btn-cut" onclick="setMode('cut')">Cut Udhar</div>
+                                </div>
+                            </div>
+                            
+                            <div id="final-status" style="margin-bottom:15px; font-weight:bold; text-align:center; padding:8px; background:#eee; border-radius:4px;">Balance: 0</div>
+
+                            <button class="btn btn-green" style="width:100%; padding:12px; font-size:16px;" onclick="saveBill()">
+                                <i class="fas fa-print"></i> SAVE & PRINT
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="udhar" class="tab-section">
+                <div class="excel-toolbar" style="background:#fff3cd; border-bottom:1px solid #ffeeba;">
+                    <strong style="color:#856404;"><i class="fas fa-exclamation-triangle"></i> Customers with Pending Dues</strong>
+                    <input type="text" id="u-search" class="grid-input" placeholder="Search..." style="width:200px; margin-left:auto;" onkeyup="renderUdhar()">
+                </div>
+                <div class="excel-container">
+                    <div style="overflow:auto; height:100%;">
+                        <table class="grid-table">
+                            <thead><tr><th>Name</th><th>Phone</th><th>City</th><th>Total Bill</th><th>Paid</th><th style="color:red;">Pending Udhar</th><th>Action</th></tr></thead>
+                            <tbody id="udhar-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="stock" class="tab-section">
+                <div class="excel-toolbar">
+                    <button class="btn btn-blue" onclick="openModal('modal-stock')"><i class="fas fa-plus"></i> Add New Stock</button>
+                    <input type="text" id="st-search" class="grid-input" placeholder="Search..." style="width:250px; margin-left:auto;" onkeyup="renderStock()">
+                </div>
+                <div class="excel-container">
+                    <div style="overflow:auto; height:100%;">
+                        <table class="grid-table">
+                            <thead><tr><th>Code</th><th>Product</th><th>Cost</th><th>Price</th><th>Qty</th><th>Value</th><th>Action</th></tr></thead>
+                            <tbody id="st-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cust" class="tab-section">
+                <div class="excel-toolbar">
+                    <button class="btn btn-blue" onclick="openModal('modal-cust')"><i class="fas fa-user-plus"></i> Add Customer</button>
+                    <input type="text" id="c-search" class="grid-input" placeholder="Search..." style="width:200px; margin-left:auto;" onkeyup="renderCust()">
+                </div>
+                <div class="excel-container">
+                    <div style="overflow:auto; height:100%;">
+                        <table class="grid-table">
+                            <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>City</th><th>Total</th><th>Paid</th><th>Balance</th><th>Action</th></tr></thead>
+                            <tbody id="cust-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dash" class="tab-section">
+                <div style="padding:20px;">
+                    <div class="stats-grid">
+                        <div class="card">
+                            <h4>Inventory Value</h4>
+                            <div class="val" id="d-val">0</div>
+                        </div>
+                        <div class="card">
+                            <h4>Total Sales</h4>
+                            <div class="val" id="d-sale">0</div>
+                        </div>
+                        <div class="card" style="border-left:4px solid var(--danger);">
+                            <h4>Market Receivable</h4>
+                            <div class="val" id="d-due" style="color:var(--danger);">0</div>
+                        </div>
+                        <div class="card" style="border-left:4px solid var(--warning);">
+                            <h4>Est. Net Profit (10%)</h4>
+                            <div class="val" id="d-prof">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings" class="tab-section">
+                <div style="padding:40px;">
+                    <button class="btn btn-red" onclick="resetSys()">RESET SYSTEM</button>
+                    <button class="btn btn-green" onclick="backup()">BACKUP DATA</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="modal-cust" class="modal-overlay">
+        <div class="modal">
+            <h3>Add Customer</h3>
+            <label>Name</label><input type="text" id="nc-name" class="grid-input" style="width:100%; margin-bottom:10px;">
+            <label>Phone</label><input type="text" id="nc-phone" class="grid-input" style="width:100%; margin-bottom:10px;">
+            <label>City</label><input type="text" id="nc-city" class="grid-input" style="width:100%; margin-bottom:20px;">
+            <div style="text-align:right;">
+                <button class="btn btn-red" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-green" onclick="saveCust()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-stock" class="modal-overlay">
+        <div class="modal">
+            <h3>Add Stock</h3>
+            <input type="text" id="ns-code" class="grid-input" placeholder="Code" style="width:100%; margin-bottom:5px;">
+            <input type="text" id="ns-name" class="grid-input" placeholder="Name" style="width:100%; margin-bottom:5px;">
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <input type="number" id="ns-cost" class="grid-input" placeholder="Cost">
+                <input type="number" id="ns-price" class="grid-input" placeholder="Price">
+            </div>
+            <input type="number" id="ns-qty" class="grid-input" placeholder="Qty" style="width:100%;">
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn btn-red" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-green" onclick="saveStock()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="print-area">
+        <div style="text-align:center; border-bottom:2px solid #333; padding-bottom:10px; margin-bottom:20px;">
+            <h1 style="margin:0;">SUNGRO AGRI DEALER</h1>
+            <p>Grain Market, Burewala | 0300-1234567</p>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <div><strong>Bill To:</strong> <span id="pr-cust"></span><br><span id="pr-phone"></span></div>
+            <div style="text-align:right;"><strong>Inv #:</strong> <span id="pr-inv"></span><br><strong>Date:</strong> <span id="pr-date"></span></div>
+        </div>
+        <table class="grid-table" style="width:100%;">
+            <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+            <tbody id="pr-body"></tbody>
+        </table>
+        <div style="text-align:right; margin-top:20px;">
+            <p><strong>Total:</strong> <span id="pr-total"></span></p>
+            <p>Paid: <span id="pr-paid"></span></p>
+            <p id="pr-bal-line"><strong>Balance:</strong> <span id="pr-bal"></span></p>
+            <p id="pr-ret-line" style="display:none;"><strong>Return:</strong> <span id="pr-ret"></span></p>
+        </div>
+        <div style="text-align:center; margin-top:50px; font-style:italic;">Thank you for your business!</div>
+    </div>
+
+    <script>
+        // --- PRE-LOADED DATA ---
+        const PRELOADED = [
+            {id:1, code:"SNG001", name:"Aegis 800ML", price:1625, cost:1381, qty:0},
+            {id:2, code:"SNG002", name:"Agrinophos 50kg", price:4465, cost:3795, qty:0},
+            {id:3, code:"SNG003", name:"Aldo 65GM 75wg", price:1075, cost:913, qty:0},
+            {id:4, code:"SNG004", name:"Avid 1L 25%", price:3450, cost:2932, qty:0},
+            {id:5, code:"SNG005", name:"Aviso 1kg 70%wp", price:3435, cost:2919, qty:0},
+            {id:6, code:"SNG006", name:"Aviso 500G 70%wp", price:1785, cost:1517, qty:0},
+            {id:7, code:"SNG007", name:"Azomide Super 200ML", price:1120, cost:952, qty:27},
+            {id:8, code:"SNG009", name:"Azomide Ultra 400ML", price:1250, cost:1062, qty:0},
+            {id:9, code:"SNG010", name:"Cantt 250ML 20%SC", price:1630, cost:1385, qty:0},
+            {id:10, code:"SNG011", name:"Carlos 120GM 200Sg", price:595, cost:505, qty:0},
+            {id:32, code:"FMC01", name:"Acefate 800G", price:3425, cost:2911, qty:23},
+            {id:33, code:"FMC04", name:"Acrobate 250G", price:2150, cost:1827, qty:0},
+            {id:34, code:"FMC07", name:"Ammonium Sulphate", price:4160, cost:3536, qty:0},
+            {id:35, code:"FMC09", name:"Beprofezin", price:1900, cost:1615, qty:0},
+            {id:36, code:"FMC10", name:"Bravis", price:2590, cost:2201, qty:0},
+            {id:41, code:"FMC19", name:"Coragen", price:1300, cost:1105, qty:0}
+        ];
+
+        let db = { stock: [], customers: [], sales: [] };
+        let cart = [];
+        let selectedCust = null;
+        let payMode = 'none'; 
+
+        // --- MASTER FIX 1: SAFE NUMBERS (Prevents Formulas from Breaking) ---
+        function val(id) {
+            const element = document.getElementById(id);
+            if (!element) return 0;
+            const v = parseFloat(element.value);
+            return isNaN(v) ? 0 : v;
+        }
+
+        function init() {
+            const s = localStorage.getItem('sungro_v20');
+            if(s) db = JSON.parse(s);
+            else {
+                db.stock = PRELOADED;
+                db.customers = [{id:1, name:"Cash Sale", phone:"", city:"", total:0, paid:0}];
+                saveDB();
+            }
+            document.getElementById('date-display').innerText = new Date().toDateString();
+            refreshAll();
+        }
+
+        function saveDB() { localStorage.setItem('sungro_v20', JSON.stringify(db)); }
+        
+        // --- MASTER FIX 2: REFRESH EVERYTHING CORRECTLY ---
+        function refreshAll() { 
+            renderDash(); 
+            renderStock(); 
+            renderCust(); 
+            renderUdhar(); 
+            popDrop(); 
+        }
+
+        function nav(id) {
+            document.querySelectorAll('.tab-section').forEach(e => e.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        // --- POS & SEARCH FIX ---
+        function searchCust() {
+            const q = document.getElementById('pos-search').value.toLowerCase();
+            const r = document.getElementById('search-res');
+            r.innerHTML = '';
+            
+            if(q.length < 1) { 
+                r.style.display = 'none'; 
+                return; 
+            }
+            
+            const hits = db.customers.filter(c => c.name.toLowerCase().includes(q) || c.phone.includes(q));
+            
+            if(hits.length > 0) {
+                hits.forEach(c => {
+                    const d = document.createElement('div');
+                    d.className = 'search-item';
+                    d.innerHTML = `<strong>${c.name}</strong> <span>${c.phone}</span>`;
+                    d.onclick = () => selectCust(c);
+                    r.appendChild(d);
+                });
+                r.style.display = 'block';
+                document.getElementById('btn-add-new').style.display = 'none';
+            } else {
+                r.style.display = 'none';
+                document.getElementById('btn-add-new').style.display = 'block';
+                document.getElementById('nc-name').value = document.getElementById('pos-search').value;
+            }
+        }
+
+        function selectCust(c) {
+            selectedCust = c;
+            document.getElementById('pos-search').value = c.name;
+            document.getElementById('search-res').style.display = 'none';
+            document.getElementById('selected-cust-id').value = c.id;
+            
+            const bal = c.total - c.paid;
+            const bd = document.getElementById('cust-bal-display');
+            bd.innerText = bal > 0 ? `(Old Udhar: ${bal})` : "(No Udhar)";
+            calcLogic();
+        }
+
+        function popDrop() {
+            const s = document.getElementById('p-item');
+            s.innerHTML = '<option value="">Select Product</option>';
+            db.stock.forEach(i => s.innerHTML += `<option value="${i.id}">${i.name}</option>`);
+        }
+
+        function fillPrice() {
+            const id = document.getElementById('p-item').value;
+            const i = db.stock.find(x => x.id == id);
+            if(i) document.getElementById('p-price').value = i.price;
+        }
+
+        function addToCart() {
+            const id = document.getElementById('p-item').value;
+            const qty = val('p-qty');
+            const pr = val('p-price');
+            const di = val('p-disc');
+            
+            if(!id || qty <= 0) return alert("Please select product and quantity");
+            
+            const item = db.stock.find(x => x.id == id);
+            cart.push({ id, name:item.name, qty, price:pr, disc:di, total:(pr*qty)-di });
+            renderCart();
+            
+            // Clear inputs for next item
+            document.getElementById('p-qty').value = "";
+            document.getElementById('p-disc').value = "0";
+            document.getElementById('p-item').focus();
+        }
+
+        function renderCart() {
+            const b = document.getElementById('cart-body');
+            b.innerHTML = '';
+            let t = 0;
+            let totalDisc = 0;
+            cart.forEach((c, i) => {
+                t += c.total;
+                totalDisc += c.disc;
+                b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.price}</td><td>${c.disc}</td><td>${c.total}</td><td><button class="btn btn-red" onclick="rem(${i})">X</button></td></tr>`;
+            });
+            document.getElementById('lbl-total').innerText = t;
+            document.getElementById('lbl-sub').innerText = t + totalDisc; 
+            document.getElementById('lbl-disc').innerText = totalDisc;
+            calcLogic();
+        }
+        function rem(i) { cart.splice(i,1); renderCart(); }
+
+        // --- SMART PAYMENT LOGIC ---
+        function calcLogic() {
+            const bill = parseFloat(document.getElementById('lbl-total').innerText) || 0;
+            const paid = val('pay-input');
+            const stat = document.getElementById('final-status');
+            const lbox = document.getElementById('logic-box');
+            
+            lbox.style.display = 'none';
+            payMode = 'none';
+
+            let oldDue = 0;
+            if(selectedCust) oldDue = selectedCust.total - selectedCust.paid;
+
+            const excess = paid - bill;
+
+            if(paid < bill) {
+                const due = bill - paid;
+                stat.innerHTML = `Adding to Udhar: <span style="color:red">${due}</span>`;
+                stat.style.background = "#ffebee";
+            } else {
+                if(excess > 0 && oldDue > 0) {
+                    lbox.style.display = 'block';
+                    document.getElementById('logic-msg').innerText = `Excess: ${excess}. Old Udhar: ${oldDue}`;
+                    stat.innerText = "Please Select Option Above";
+                    stat.style.background = "#fff3cd";
+                } else {
+                    payMode = 'return';
+                    stat.innerHTML = `Return Cash: <span style="color:green">${excess}</span>`;
+                    stat.style.background = "#e8f5e9";
+                }
+            }
+        }
+
+        function setMode(m) {
+            payMode = m;
+            document.querySelectorAll('.logic-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('btn-'+m).classList.add('selected');
+            const bill = parseFloat(document.getElementById('lbl-total').innerText) || 0;
+            const paid = val('pay-input');
+            const ex = paid - bill;
+            const stat = document.getElementById('final-status');
+            
+            if(m === 'return') {
+                stat.innerHTML = `Return Cash: <span style="color:green">${ex}</span> (Udhar Unchanged)`;
+            } else {
+                stat.innerHTML = `Udhar Reduced by: <span style="color:blue">${ex}</span>`;
+            }
+        }
+
+        function saveBill() {
+            if(cart.length === 0) return alert("Cart is Empty");
+            if(!selectedCust) return alert("Please Select a Customer First");
+            
+            const bill = parseFloat(document.getElementById('lbl-total').innerText) || 0;
+            let paidIn = val('pay-input');
+            let finalPaid = 0;
+
+            if(paidIn < bill) {
+                finalPaid = paidIn;
+            } else {
+                const ex = paidIn - bill;
+                if(ex > 0) {
+                    const old = selectedCust.total - selectedCust.paid;
+                    if(old > 0) {
+                        if(payMode === 'none') return alert("Please select 'Return Cash' or 'Cut Udhar' above the save button.");
+                        if(payMode === 'return') finalPaid = bill; 
+                        else finalPaid = paidIn; 
+                    } else {
+                        finalPaid = bill; 
+                    }
+                } else {
+                    finalPaid = bill;
+                }
+            }
+
+            // Update DB
+            const sale = {id:Date.now(), date:new Date().toLocaleDateString(), cust:selectedCust.name, total:bill, paid:finalPaid, items:[...cart]};
+            db.sales.push(sale);
+            
+            selectedCust.total += bill;
+            selectedCust.paid += finalPaid;
+            
+            cart.forEach(c => {
+                const s = db.stock.find(x => x.id == c.id);
+                if(s) s.qty -= c.qty;
+            });
+            saveDB();
+
+            // Print
+            printInv(sale, selectedCust, bill, finalPaid);
+            
+            // --- MASTER FIX 3: FULL RESET ---
+            cart = []; 
+            renderCart(); 
+            selectedCust = null;
+            document.getElementById('pay-input').value = "";
+            document.getElementById('pos-search').value = "";
+            document.getElementById('cust-bal-display').innerText = "";
+            document.getElementById('lbl-total').innerText = "0";
+            document.getElementById('final-status').innerText = "Balance: 0";
+            document.getElementById('final-status').style.background = "#eee";
+            refreshAll();
+        }
+
+        // --- MASTER FIX 4: PRINTING FOR DESKTOP ---
+        function printInv(sale, cust, bill, paid) {
+            document.getElementById('pr-cust').innerText = cust.name;
+            document.getElementById('pr-phone').innerText = cust.phone;
+            document.getElementById('pr-inv').innerText = sale.id;
+            document.getElementById('pr-date').innerText = sale.date;
+            
+            const b = document.getElementById('pr-body');
+            b.innerHTML = '';
+            sale.items.forEach(c => {
+                b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.price}</td><td>${c.total}</td></tr>`;
+            });
+            
+            document.getElementById('pr-total').innerText = bill;
+            document.getElementById('pr-paid').innerText = paid;
+            
+            const bal = (cust.total - cust.paid);
+            if(bal > 0) {
+                document.getElementById('pr-bal-line').style.display = 'block';
+                document.getElementById('pr-bal').innerText = bal;
+                document.getElementById('pr-ret-line').style.display = 'none';
+            } else {
+                document.getElementById('pr-bal-line').style.display = 'none';
+            }
+            
+            // ELECTRON PRINT TRICK
+            const pa = document.getElementById('print-area');
+            pa.style.display = 'block';
+            
+            setTimeout(() => {
+                window.print();
+                pa.style.display = 'none';
+            }, 300); // 300ms delay to ensure data is loaded
+        }
+
+        // --- MASTER FIX 5: DASHBOARD & UDHAR LIST ---
+        function renderUdhar() {
+            const b = document.getElementById('udhar-body');
+            b.innerHTML = '';
+            const q = document.getElementById('u-search').value.toLowerCase();
+            db.customers.forEach(c => {
+                const bal = c.total - c.paid;
+                if(bal > 0 && c.name.toLowerCase().includes(q)) {
+                    b.innerHTML += `<tr><td>${c.name}</td><td>${c.phone}</td><td>${c.city}</td><td>${c.total}</td><td>${c.paid}</td><td style="color:red;font-weight:bold">${bal}</td><td><button class="btn btn-blue" onclick="rec(${c.id})">Receive</button></td></tr>`;
+                }
+            });
+        }
+
+        function rec(id) {
+            const amountText = document.getElementById('u-search').value;
+            
+            if (amountText === "" || isNaN(parseFloat(amountText))) {
+                alert("INSTRUCTION: Type the AMOUNT in the Search Bar above, then click Receive.");
+                document.getElementById('u-search').focus();
+                return;
+            }
+
+            const a = parseFloat(amountText);
+            const c = db.customers.find(x => x.id == id);
+            if (c) {
+                if(confirm("Receive " + a + " from " + c.name + "?")) {
+                    c.paid += a; 
+                    saveDB(); 
+                    refreshAll();
+                    document.getElementById('u-search').value = ""; 
+                }
+            }
+        }
+
+        function renderStock() {
+            const b = document.getElementById('st-body');
+            b.innerHTML = '';
+            const q = document.getElementById('st-search').value.toLowerCase();
+            db.stock.forEach(s => {
+                if(s.name.toLowerCase().includes(q))
+                b.innerHTML += `<tr><td>${s.code}</td><td>${s.name}</td><td>${s.cost}</td><td>${s.price}</td><td>${s.qty}</td><td>${s.price*s.qty}</td><td><button class="btn btn-blue">Edit</button></td></tr>`;
+            });
+        }
+        function renderCust() {
+            const b = document.getElementById('cust-body');
+            b.innerHTML = '';
+            const q = document.getElementById('c-search').value.toLowerCase();
+            db.customers.forEach(c => {
+                if(c.name.toLowerCase().includes(q))
+                b.innerHTML += `<tr><td>${c.id}</td><td>${c.name}</td><td>${c.phone}</td><td>${c.city}</td><td>${c.total}</td><td>${c.paid}</td><td>${c.total-c.paid}</td><td><button class="btn btn-blue">Edit</button></td></tr>`;
+            });
+        }
+        function renderDash() {
+            let v=0, s=0, d=0;
+            
+            db.stock.forEach(x => v += x.price*x.qty);
+            db.sales.forEach(x => {s += x.total;}); 
+            db.customers.forEach(x => d += (x.total-x.paid));
+            
+            // Simple 10% Profit Estimate
+            let p = s * 0.10; 
+
+            document.getElementById('d-val').innerText = v.toLocaleString();
+            document.getElementById('d-sale').innerText = s.toLocaleString();
+            document.getElementById('d-due').innerText = d.toLocaleString();
+            document.getElementById('d-prof').innerText = p.toLocaleString(); 
+        }
+
+        // --- UTILS ---
+        function quickAddCust() { openModal('modal-cust'); document.getElementById('nc-name').value = document.getElementById('pos-search').value; }
+        function saveCust() {
+            const n = document.getElementById('nc-name').value;
+            if(!n) return;
+            const c = {id:Date.now(), name:n, phone:document.getElementById('nc-phone').value, city:document.getElementById('nc-city').value, total:0, paid:0};
+            db.customers.push(c); saveDB(); closeModal(); refreshAll();
+            if(document.getElementById('pos').classList.contains('active')) selectCust(c);
+        }
+        function saveStock() {
+            const n = document.getElementById('ns-name').value;
+            if(!n) return;
+            db.stock.push({id:Date.now(), code:document.getElementById('ns-code').value, name:n, cost:val('ns-cost'), price:val('ns-price'), qty:val('ns-qty')});
+            saveDB(); closeModal(); refreshAll();
+        }
+        function openModal(id) { document.querySelector(`#${id}`).style.display = 'flex'; }
+        function closeModal() { document.querySelectorAll('.modal-overlay').forEach(e => e.style.display = 'none'); }
+        function resetSys() { if(confirm("Are you sure you want to delete ALL data?")) { localStorage.clear(); location.reload(); } }
+        function backup() {
+            const a = document.createElement("a");
+            a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            a.download = "Sungro_Data_Backup.json";
+            a.click();
+        }
+
+        init();
+    </script>
+</body>
+</html>
