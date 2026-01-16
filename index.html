@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sungro Master ERP V25.0</title>
+    <title>Nasir & Brother's ERP</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -22,7 +22,7 @@
 
         /* --- SIDEBAR --- */
         .sidebar { width: 240px; background: #2b579a; color: white; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
-        .logo { padding: 20px; text-align: center; background: #1e3a6e; font-size: 20px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo { padding: 0; background: white; border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; min-height: 80px; }
         .menu { flex: 1; padding-top: 10px; overflow-y: auto; }
         .menu-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; transition: 0.2s; border-left: 4px solid transparent; font-size: 14px; }
         .menu-item:hover { background: rgba(255,255,255,0.1); }
@@ -93,7 +93,10 @@
 <body>
 
     <div class="sidebar">
-        <div class="logo"><i class="fas fa-leaf"></i> SUNGRO ERP</div>
+        <div class="logo">
+            <img src="app/4.jpeg" alt="Nasir & Brother's" style="max-width: 100%; height: auto; max-height: 70px; display: block;">
+        </div>
+        
         <div class="menu">
             <div class="menu-item active" onclick="nav('dash')"><i class="fas fa-chart-line"></i> Dashboard</div>
             <div class="menu-item" onclick="nav('pos')"><i class="fas fa-cash-register"></i> Billing (POS)</div>
@@ -114,14 +117,18 @@
 
     <div class="main">
         <div class="top-bar">
-            <div style="font-weight:600; font-size:18px; color:var(--primary);">Sungro V25.0 (Master)</div>
+            <div style="font-weight:600; font-size:18px; color:var(--primary);">Nasir & Brother's ERP</div>
             <div id="date-display" style="font-size:13px; font-weight:600; color:#555;"></div>
         </div>
 
         <div class="content">
 
             <div id="dash" class="tab-section active">
-                <div style="padding:20px;">
+                <div style="text-align:center; padding: 15px; background: white; border-bottom: 1px solid #ddd; margin-bottom: 20px; border-radius: 5px;">
+                    <img src="app/1.jpeg" style="max-height: 250px; max-width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                </div>
+
+                <div style="padding:0 20px 20px 20px;">
                     <div class="stats-grid">
                         <div class="card" style="border-left: 4px solid #2b579a;"><h4>1. FMC Stock Value</h4><div class="val" id="d-fmc">0</div></div>
                         <div class="card" style="border-left: 4px solid #107c41;"><h4>2. Sungro Stock Value</h4><div class="val" id="d-sungro">0</div></div>
@@ -220,6 +227,8 @@
 
             <div id="stock-section" class="tab-section">
                 <div class="excel-toolbar">
+                    <img id="stock-brand-logo" src="" style="height: 50px; margin-right: 20px; display: none;">
+                    
                     <h3 id="stock-title" style="margin:0 10px 0 0; color:var(--primary);">Inventory</h3>
                     <button class="btn btn-blue" onclick="openModal('modal-stock')"><i class="fas fa-plus"></i> Add Product</button>
                     <input type="text" id="st-search" class="grid-input" placeholder="Search..." style="width:200px; margin-left:auto;" onkeyup="renderStock()">
@@ -368,7 +377,7 @@
 
     <div id="print-area">
         <div style="text-align:center; border-bottom:2px solid #333; padding-bottom:10px; margin-bottom:20px;">
-            <h1 style="margin:0;">SUNGRO AGRI DEALER</h1>
+            <h1 style="margin:0;">NASIR & BROTHER'S</h1>
             <p>Grain Market, Burewala | 0300-1234567</p>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
@@ -454,11 +463,24 @@
                 currentStockFilter = id.replace('stock-', ''); 
                 document.getElementById('stock-section').classList.add('active');
                 
-                let title = "Inventory";
-                if(currentStockFilter === 'sungro') title = "Sungro Stock";
-                if(currentStockFilter === 'fmc') title = "FMC Stock";
-                if(currentStockFilter === 'misc') title = "Misc Stock";
-                document.getElementById('stock-title').innerText = title;
+                // LOGIC FOR STOCK LOGOS
+                const logo = document.getElementById('stock-brand-logo');
+                const title = document.getElementById('stock-title');
+                
+                if (currentStockFilter === 'fmc') {
+                    logo.src = 'app/2.jpeg';
+                    logo.style.display = 'block';
+                    title.style.display = 'none'; // Hide text title if logo is there, or keep both? Let's hide text to be clean
+                } else if (currentStockFilter === 'sungro') {
+                    logo.src = 'app/3.jpeg';
+                    logo.style.display = 'block';
+                    title.style.display = 'none';
+                } else {
+                    logo.style.display = 'none';
+                    title.style.display = 'block';
+                    title.innerText = (currentStockFilter === 'misc') ? "Misc Stock" : "Inventory";
+                }
+                
                 renderStock();
             } else {
                 document.getElementById(id).classList.add('active');
@@ -516,12 +538,11 @@
 
             cart.push({ id, name:item.name, qty, price, disc:discPrice, total });
             
-            // --- FIXED: CLEAR ALL FIELDS ---
             document.getElementById('p-qty').value = "";
             document.getElementById('p-price').value = "";
             document.getElementById('p-disc').value = "0";
-            document.getElementById('p-item').value = ""; // Reset Dropdown
-            document.getElementById('p-item').focus(); // Focus back to product select
+            document.getElementById('p-item').value = ""; 
+            document.getElementById('p-item').focus();
             
             renderCart();
         }
@@ -714,9 +735,8 @@
             openModal('modal-cust');
         }
         
-        // --- FIXED: NEW FUNCTION TO ADD CUSTOMER CLEANLY ---
         function openNewCustModal() {
-            document.getElementById('nc-id').value = ""; // Clear ID to ensure creation
+            document.getElementById('nc-id').value = ""; 
             document.getElementById('nc-name').value = "";
             document.getElementById('nc-phone').value = "";
             document.getElementById('nc-city').value = "";
@@ -775,7 +795,7 @@
         function openModal(id) { document.querySelector(`#${id}`).style.display = 'flex'; }
         function closeModal() { document.querySelectorAll('.modal-overlay').forEach(e => e.style.display = 'none'); }
         function resetSys() { if(confirm("DELETE ALL DATA?")) { localStorage.clear(); location.reload(); } }
-        function backup() { const a = document.createElement("a"); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); a.download = "Sungro_V25_Backup.json"; a.click(); }
+        function backup() { const a = document.createElement("a"); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); a.download = "NasirERP_Backup.json"; a.click(); }
         init();
     </script>
 </body>
