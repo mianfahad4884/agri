@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sungro Master ERP V24.0</title>
+    <title>Sungro Master ERP V25.0</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -114,7 +114,7 @@
 
     <div class="main">
         <div class="top-bar">
-            <div style="font-weight:600; font-size:18px; color:var(--primary);">Sungro V24.0 (Master)</div>
+            <div style="font-weight:600; font-size:18px; color:var(--primary);">Sungro V25.0 (Master)</div>
             <div id="date-display" style="font-size:13px; font-weight:600; color:#555;"></div>
         </div>
 
@@ -236,7 +236,7 @@
 
             <div id="cust" class="tab-section">
                 <div class="excel-toolbar">
-                    <button class="btn btn-blue" onclick="openModal('modal-cust')"><i class="fas fa-user-plus"></i> Add Customer</button>
+                    <button class="btn btn-blue" onclick="openNewCustModal()"><i class="fas fa-user-plus"></i> Add Customer</button>
                     <input type="text" id="c-search" class="grid-input" placeholder="Search..." style="width:200px; margin-left:auto;" onkeyup="renderCust()">
                 </div>
                 <div class="excel-container">
@@ -410,7 +410,7 @@
             sales: [], 
             expenses: [],
             dues: [],
-            transactions: [] // New: Records all Sales and Payments
+            transactions: [] 
         };
         
         let cart = [];
@@ -421,20 +421,18 @@
         function txt(id) { const e = document.getElementById(id); return e ? e.value : ""; }
 
         function init() {
-            const s = localStorage.getItem('sungro_v24');
+            const s = localStorage.getItem('sungro_v25');
             if(s) db = JSON.parse(s);
             else {
                 db.customers = [{id:1, name:"Cash Sale", phone:"", city:"", prod_due:0, cash_due:0}];
                 saveDB();
             }
-            // Migration check for older versions
             if(!db.transactions) db.transactions = [];
-            
             document.getElementById('date-display').innerText = new Date().toDateString();
             refreshAll();
         }
 
-        function saveDB() { localStorage.setItem('sungro_v24', JSON.stringify(db)); }
+        function saveDB() { localStorage.setItem('sungro_v25', JSON.stringify(db)); }
 
         function refreshAll() {
             renderDash();
@@ -443,7 +441,7 @@
             renderStock(); 
             renderExp();
             renderDues();
-            renderTrans(); // New
+            renderTrans();
             popDrop();
         }
 
@@ -467,108 +465,6 @@
             }
         }
 
-        // --- DASHBOARD ---
-        function renderDash() {
-            let v_fmc=0, v_sungro=0, v_misc=0, sales=0, exp=0, comp_due=0, other_due=0, market_due=0, cost_sold=0;
-
-            db.stock.forEach(s => {
-                const val = s.price * s.qty;
-                if(s.cat === 'Sungro') v_sungro += val;
-                else if(s.cat === 'FMC') v_fmc += val;
-                else v_misc += val;
-            });
-
-            db.sales.forEach(s => {
-                sales += s.total;
-                s.items.forEach(i => {
-                    const stockItem = db.stock.find(x => x.id == i.id);
-                    if(stockItem) cost_sold += (stockItem.cost * i.qty);
-                });
-            });
-
-            db.expenses.forEach(e => exp += e.amt);
-
-            db.dues.forEach(d => {
-                if(d.type === 'Company') comp_due += d.amt;
-                else other_due += d.amt;
-            });
-
-            db.customers.forEach(c => {
-                market_due += (c.prod_due || 0) + (c.cash_due || 0);
-            });
-
-            let profit = sales - cost_sold - exp;
-
-            document.getElementById('d-fmc').innerText = v_fmc.toLocaleString();
-            document.getElementById('d-sungro').innerText = v_sungro.toLocaleString();
-            document.getElementById('d-misc').innerText = v_misc.toLocaleString();
-            document.getElementById('d-total-stock').innerText = (v_fmc+v_sungro+v_misc).toLocaleString();
-            document.getElementById('d-sale').innerText = sales.toLocaleString();
-            document.getElementById('d-exp').innerText = exp.toLocaleString();
-            document.getElementById('d-market-due').innerText = market_due.toLocaleString();
-            document.getElementById('d-prof').innerText = profit.toLocaleString();
-            document.getElementById('d-comp-due').innerText = comp_due.toLocaleString();
-            document.getElementById('d-other-due').innerText = other_due.toLocaleString();
-        }
-
-        // --- INVENTORY ---
-        function renderStock() {
-            const b = document.getElementById('st-body');
-            b.innerHTML = '';
-            const q = document.getElementById('st-search').value.toLowerCase();
-            
-            let data = db.stock;
-            if(currentStockFilter !== 'all') {
-                data = db.stock.filter(s => (s.cat || 'Misc').toLowerCase() === currentStockFilter);
-            }
-
-            data.forEach(s => {
-                if(s.name.toLowerCase().includes(q)) {
-                    let status = s.qty < 10 ? '<span style="color:red; font-weight:bold">Low Stock</span>' : 'OK';
-                    let rowClass = s.qty < 10 ? 'low-stock' : '';
-                    b.innerHTML += `<tr class="${rowClass}">
-                        <td>${s.batch || '-'}</td>
-                        <td>${s.name}</td>
-                        <td>${s.cat || 'Misc'}</td>
-                        <td>${s.cost}</td>
-                        <td>${s.price}</td>
-                        <td>${s.exp || '-'}</td>
-                        <td>${s.qty}</td>
-                        <td>${(s.qty*s.price).toLocaleString()}</td>
-                        <td>${status}</td>
-                    </tr>`;
-                }
-            });
-        }
-
-        function saveStock() {
-            const name = txt('ns-name');
-            if(!name) return alert("Name required");
-            
-            const cat = txt('ns-cat');
-            const cost = val('ns-cost');
-            const qty = val('ns-qty');
-            const payType = txt('ns-pay-type'); 
-
-            db.stock.push({
-                id: Date.now(),
-                cat: cat,
-                name: name,
-                cost: cost,
-                price: val('ns-price'),
-                qty: qty,
-                batch: txt('ns-batch'),
-                exp: txt('ns-exp')
-            });
-
-            if(payType === 'Credit') {
-                const totalCost = cost * qty;
-                db.dues.push({id:Date.now()+1, type:'Company', name: `Stock: ${name}`, amt: totalCost});
-            }
-
-            saveDB(); closeModal(); refreshAll();
-        }
-
         // --- POS ---
         function searchCust() {
             const q = txt('pos-search').toLowerCase();
@@ -580,7 +476,6 @@
                 document.getElementById('cust-bal-display').innerText = "";
                 return; 
             }
-            
             const hits = db.customers.filter(c => c.name.toLowerCase().includes(q) || c.phone.includes(q));
             if(hits.length > 0) {
                 hits.forEach(c => {
@@ -621,7 +516,13 @@
 
             cart.push({ id, name:item.name, qty, price, disc:discPrice, total });
             
+            // --- FIXED: CLEAR ALL FIELDS ---
             document.getElementById('p-qty').value = "";
+            document.getElementById('p-price').value = "";
+            document.getElementById('p-disc').value = "0";
+            document.getElementById('p-item').value = ""; // Reset Dropdown
+            document.getElementById('p-item').focus(); // Focus back to product select
+            
             renderCart();
         }
 
@@ -657,7 +558,6 @@
 
         function saveBill() {
             if(cart.length === 0) return alert("Cart empty");
-            
             const total = parseFloat(document.getElementById('lbl-total').innerText);
             const paid = val('pay-input');
             let actualPaid = paid;
@@ -689,7 +589,6 @@
             const sale = {id:Date.now(), date: new Date().toLocaleDateString(), cust: finalCust.name, total: total, paid: actualPaid, items:[...cart]};
             db.sales.push(sale);
             
-            // NEW: Add to Transaction History
             db.transactions.push({
                 id: sale.id,
                 date: sale.date,
@@ -713,27 +612,23 @@
             document.getElementById('pr-phone').innerText = cust.phone;
             document.getElementById('pr-inv').innerText = sale.id;
             document.getElementById('pr-date').innerText = sale.date;
-            
             const b = document.getElementById('pr-body');
             b.innerHTML = '';
             sale.items.forEach(c => {
                 b.innerHTML += `<tr><td>${c.name}</td><td>${c.qty}</td><td>${c.price} - ${c.disc}</td><td>${c.total}</td></tr>`;
             });
-            
             document.getElementById('pr-total').innerText = total.toLocaleString();
             document.getElementById('pr-prev').innerText = oldBal.toLocaleString();
             document.getElementById('pr-paid').innerText = paid.toLocaleString();
-            
             let finalBal = 0;
             if(selectedCust) finalBal = (cust.prod_due || 0) + (cust.cash_due || 0);
             document.getElementById('pr-rem').innerText = finalBal.toLocaleString();
-
             const pa = document.getElementById('print-area');
             pa.style.display = 'block';
             setTimeout(() => { window.print(); pa.style.display = 'none'; }, 300);
         }
 
-        // --- UDHAR LIST & NEW RECEIVE LOGIC ---
+        // --- UDHAR & PAYMENT ---
         function renderUdhar() {
             const b = document.getElementById('udhar-body');
             b.innerHTML = '';
@@ -744,70 +639,37 @@
                 }
             });
         }
-
         function openReceiveModal(id) {
             const c = db.customers.find(x => x.id == id);
             if(!c) return;
             const due = (c.prod_due || 0) + (c.cash_due || 0);
-            
             document.getElementById('rec-cust-id').value = c.id;
             document.getElementById('rec-name').innerText = c.name;
             document.getElementById('rec-due').innerText = due;
             document.getElementById('rec-amt').value = "";
             document.getElementById('rec-desc').value = "";
-            
             openModal('modal-receive');
         }
-
         function fillFullPayment() {
             document.getElementById('rec-amt').value = document.getElementById('rec-due').innerText;
         }
-
         function processPayment() {
             const id = document.getElementById('rec-cust-id').value;
             const amt = val('rec-amt');
             const desc = txt('rec-desc') || "Payment Received";
-            
             if(!id || amt <= 0) return alert("Please enter valid amount");
-            
             const c = db.customers.find(x => x.id == id);
             let remainingAmt = amt;
-            
-            // Logic: Deduct from Product Udhar first, then Cash Udhar
             if(c.prod_due > 0) {
-                if(remainingAmt >= c.prod_due) {
-                    remainingAmt -= c.prod_due;
-                    c.prod_due = 0;
-                } else {
-                    c.prod_due -= remainingAmt;
-                    remainingAmt = 0;
-                }
+                if(remainingAmt >= c.prod_due) { remainingAmt -= c.prod_due; c.prod_due = 0; } 
+                else { c.prod_due -= remainingAmt; remainingAmt = 0; }
             }
-            
             if(remainingAmt > 0 && c.cash_due > 0) {
-                if(remainingAmt >= c.cash_due) {
-                    remainingAmt -= c.cash_due;
-                    c.cash_due = 0;
-                } else {
-                    c.cash_due -= remainingAmt;
-                    remainingAmt = 0; // All used
-                }
+                if(remainingAmt >= c.cash_due) { remainingAmt -= c.cash_due; c.cash_due = 0; } 
+                else { c.cash_due -= remainingAmt; remainingAmt = 0; }
             }
-
-            // Save Transaction
-            db.transactions.push({
-                id: Date.now(),
-                date: new Date().toLocaleDateString(),
-                type: 'Payment',
-                cust: c.name,
-                desc: desc,
-                amt: amt
-            });
-
-            saveDB();
-            closeModal();
-            refreshAll();
-            alert("Payment Received Successfully!");
+            db.transactions.push({ id: Date.now(), date: new Date().toLocaleDateString(), type: 'Payment', cust: c.name, desc: desc, amt: amt });
+            saveDB(); closeModal(); refreshAll(); alert("Payment Received Successfully!");
         }
 
         // --- TRANSACTION HISTORY ---
@@ -815,41 +677,26 @@
             const b = document.getElementById('trans-body');
             b.innerHTML = '';
             const q = txt('tr-search').toLowerCase();
-            
-            // Sort by Date (Newest First) - simplified sort by ID roughly
             const sorted = [...db.transactions].reverse();
-
             sorted.forEach(t => {
                 if(t.cust.toLowerCase().includes(q) || t.type.toLowerCase().includes(q)) {
                     let badgeClass = t.type === 'Sale' ? 'badge-sale' : 'badge-pay';
-                    b.innerHTML += `<tr>
-                        <td>${t.id}</td>
-                        <td>${t.date}</td>
-                        <td><span class="badge ${badgeClass}">${t.type}</span></td>
-                        <td>${t.cust}</td>
-                        <td>${t.desc}</td>
-                        <td style="font-weight:bold;">${t.amt}</td>
-                    </tr>`;
+                    b.innerHTML += `<tr><td>${t.id}</td><td>${t.date}</td><td><span class="badge ${badgeClass}">${t.type}</span></td><td>${t.cust}</td><td>${t.desc}</td><td style="font-weight:bold;">${t.amt}</td></tr>`;
                 }
             });
         }
 
-        // --- CUSTOMER LIST (HIDDEN UDHAR) ---
+        // --- CUSTOMERS ---
         function renderCust() {
             const b = document.getElementById('cust-body');
             b.innerHTML = '';
             const q = txt('c-search').toLowerCase();
             db.customers.forEach(c => {
                 if(c.name.toLowerCase().includes(q)) {
-                    // Hidden Udhar columns as requested
-                    b.innerHTML += `<tr>
-                        <td>${c.name}</td><td>${c.phone}</td><td>${c.city || '-'}</td>
-                        <td><button class="btn btn-blue" onclick="editCust(${c.id})">Edit</button></td>
-                    </tr>`;
+                    b.innerHTML += `<tr><td>${c.name}</td><td>${c.phone}</td><td>${c.city || '-'}</td><td><button class="btn btn-blue" onclick="editCust(${c.id})">Edit</button></td></tr>`;
                 }
             });
         }
-
         function editCust(id) {
             const c = db.customers.find(x => x.id == id);
             if(!c) return;
@@ -859,10 +706,18 @@
             document.getElementById('nc-city').value = c.city;
             openModal('modal-cust');
         }
-
         function quickAddCust() {
             document.getElementById('nc-id').value = "";
             document.getElementById('nc-name').value = txt('pos-search');
+            document.getElementById('nc-phone').value = "";
+            document.getElementById('nc-city').value = "";
+            openModal('modal-cust');
+        }
+        
+        // --- FIXED: NEW FUNCTION TO ADD CUSTOMER CLEANLY ---
+        function openNewCustModal() {
+            document.getElementById('nc-id').value = ""; // Clear ID to ensure creation
+            document.getElementById('nc-name').value = "";
             document.getElementById('nc-phone').value = "";
             document.getElementById('nc-city').value = "";
             openModal('modal-cust');
@@ -883,62 +738,44 @@
             saveDB(); closeModal(); refreshAll();
         }
 
-        // --- EXPENSES & DUES ---
-        function renderExp() {
-            const b = document.getElementById('exp-body');
-            b.innerHTML = '';
-            db.expenses.forEach((e, i) => {
-                b.innerHTML += `<tr><td>${e.date}</td><td>${e.desc}</td><td>${e.amt}</td><td><button class="btn btn-red" onclick="delExp(${i})">X</button></td></tr>`;
-            });
+        // --- OTHERS ---
+        function renderDash() {
+            let v_fmc=0, v_sungro=0, v_misc=0, sales=0, exp=0, comp_due=0, other_due=0, market_due=0, cost_sold=0;
+            db.stock.forEach(s => { const val = s.price * s.qty; if(s.cat === 'Sungro') v_sungro += val; else if(s.cat === 'FMC') v_fmc += val; else v_misc += val; });
+            db.sales.forEach(s => { sales += s.total; s.items.forEach(i => { const stockItem = db.stock.find(x => x.id == i.id); if(stockItem) cost_sold += (stockItem.cost * i.qty); }); });
+            db.expenses.forEach(e => exp += e.amt);
+            db.dues.forEach(d => { if(d.type === 'Company') comp_due += d.amt; else other_due += d.amt; });
+            db.customers.forEach(c => { market_due += (c.prod_due || 0) + (c.cash_due || 0); });
+            let profit = sales - cost_sold - exp;
+            document.getElementById('d-fmc').innerText = v_fmc.toLocaleString(); document.getElementById('d-sungro').innerText = v_sungro.toLocaleString(); document.getElementById('d-misc').innerText = v_misc.toLocaleString(); document.getElementById('d-total-stock').innerText = (v_fmc+v_sungro+v_misc).toLocaleString(); document.getElementById('d-sale').innerText = sales.toLocaleString(); document.getElementById('d-exp').innerText = exp.toLocaleString(); document.getElementById('d-market-due').innerText = market_due.toLocaleString(); document.getElementById('d-prof').innerText = profit.toLocaleString(); document.getElementById('d-comp-due').innerText = comp_due.toLocaleString(); document.getElementById('d-other-due').innerText = other_due.toLocaleString();
         }
-        function addExpense() {
-            const d = txt('ex-desc'); const a = val('ex-amt');
-            if(!d || a<=0) return;
-            db.expenses.push({date: new Date().toLocaleDateString(), desc:d, amt:a});
-            document.getElementById('ex-desc').value = ""; document.getElementById('ex-amt').value = "";
-            saveDB(); refreshAll();
+        function renderStock() {
+            const b = document.getElementById('st-body'); b.innerHTML = '';
+            const q = document.getElementById('st-search').value.toLowerCase();
+            let data = db.stock;
+            if(currentStockFilter !== 'all') data = db.stock.filter(s => (s.cat || 'Misc').toLowerCase() === currentStockFilter);
+            data.forEach(s => { if(s.name.toLowerCase().includes(q)) { let status = s.qty < 10 ? '<span style="color:red; font-weight:bold">Low Stock</span>' : 'OK'; let rowClass = s.qty < 10 ? 'low-stock' : ''; b.innerHTML += `<tr class="${rowClass}"><td>${s.batch || '-'}</td><td>${s.name}</td><td>${s.cat || 'Misc'}</td><td>${s.cost}</td><td>${s.price}</td><td>${s.exp || '-'}</td><td>${s.qty}</td><td>${(s.qty*s.price).toLocaleString()}</td><td>${status}</td></tr>`; } });
         }
+        function saveStock() {
+            const name = txt('ns-name'); if(!name) return alert("Name required");
+            const cat = txt('ns-cat'); const cost = val('ns-cost'); const qty = val('ns-qty'); const payType = txt('ns-pay-type'); 
+            db.stock.push({ id: Date.now(), cat: cat, name: name, cost: cost, price: val('ns-price'), qty: qty, batch: txt('ns-batch'), exp: txt('ns-exp') });
+            if(payType === 'Credit') { const totalCost = cost * qty; db.dues.push({id:Date.now()+1, type:'Company', name: `Stock: ${name}`, amt: totalCost}); }
+            saveDB(); closeModal(); refreshAll();
+        }
+        function renderExp() { const b = document.getElementById('exp-body'); b.innerHTML = ''; db.expenses.forEach((e, i) => { b.innerHTML += `<tr><td>${e.date}</td><td>${e.desc}</td><td>${e.amt}</td><td><button class="btn btn-red" onclick="delExp(${i})">X</button></td></tr>`; }); }
+        function addExpense() { const d = txt('ex-desc'); const a = val('ex-amt'); if(!d || a<=0) return; db.expenses.push({date: new Date().toLocaleDateString(), desc:d, amt:a}); document.getElementById('ex-desc').value = ""; document.getElementById('ex-amt').value = ""; saveDB(); refreshAll(); }
         function delExp(i) { db.expenses.splice(i,1); saveDB(); refreshAll(); }
-
-        function renderDues() {
-            const b = document.getElementById('dues-body');
-            b.innerHTML = '';
-            db.dues.forEach((d, i) => {
-                b.innerHTML += `<tr><td>${d.type}</td><td>${d.name}</td><td>${d.amt}</td><td><button class="btn btn-red" onclick="delDue(${i})">Paid/Clear</button></td></tr>`;
-            });
-        }
-        function addDue() {
-            const type = txt('due-type'); const n = txt('due-name'); const a = val('due-amt');
-            if(!n || a<=0) return;
-            db.dues.push({id:Date.now(), type, name:n, amt:a});
-            document.getElementById('due-name').value = ""; document.getElementById('due-amt').value = "";
-            saveDB(); refreshAll();
-        }
-        function delDue(i) {
-            if(confirm("Mark this due as Paid/Cleared?")) { db.dues.splice(i,1); saveDB(); refreshAll(); }
-        }
-
-        // --- UTILS ---
-        function popDrop() {
-            const s = document.getElementById('p-item');
-            s.innerHTML = '<option value="">Select Product</option>';
-            db.stock.forEach(i => s.innerHTML += `<option value="${i.id}">${i.name} (Stock: ${i.qty})</option>`);
-        }
-        function fillPrice() {
-            const id = txt('p-item');
-            const i = db.stock.find(x => x.id == id);
-            if(i) document.getElementById('p-price').value = i.price;
-        }
+        function renderDues() { const b = document.getElementById('dues-body'); b.innerHTML = ''; db.dues.forEach((d, i) => { b.innerHTML += `<tr><td>${d.type}</td><td>${d.name}</td><td>${d.amt}</td><td><button class="btn btn-red" onclick="delDue(${i})">Paid/Clear</button></td></tr>`; }); }
+        function addDue() { const type = txt('due-type'); const n = txt('due-name'); const a = val('due-amt'); if(!n || a<=0) return; db.dues.push({id:Date.now(), type, name:n, amt:a}); document.getElementById('due-name').value = ""; document.getElementById('due-amt').value = ""; saveDB(); refreshAll(); }
+        function delDue(i) { if(confirm("Mark this due as Paid/Cleared?")) { db.dues.splice(i,1); saveDB(); refreshAll(); } }
+        
+        function popDrop() { const s = document.getElementById('p-item'); s.innerHTML = '<option value="">Select Product</option>'; db.stock.forEach(i => s.innerHTML += `<option value="${i.id}">${i.name} (Stock: ${i.qty})</option>`); }
+        function fillPrice() { const id = txt('p-item'); const i = db.stock.find(x => x.id == id); if(i) document.getElementById('p-price').value = i.price; }
         function openModal(id) { document.querySelector(`#${id}`).style.display = 'flex'; }
         function closeModal() { document.querySelectorAll('.modal-overlay').forEach(e => e.style.display = 'none'); }
         function resetSys() { if(confirm("DELETE ALL DATA?")) { localStorage.clear(); location.reload(); } }
-        function backup() {
-            const a = document.createElement("a");
-            a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
-            a.download = "Sungro_V24_Backup.json";
-            a.click();
-        }
-
+        function backup() { const a = document.createElement("a"); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); a.download = "Sungro_V25_Backup.json"; a.click(); }
         init();
     </script>
 </body>
