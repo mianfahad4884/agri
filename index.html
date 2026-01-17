@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nasir & Brother's ERP V33.0</title>
+    <title>Nasir & Brother's ERP V34.0</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -22,14 +22,16 @@
 
         /* --- SIDEBAR --- */
         .sidebar { width: 240px; background: #2b579a; color: white; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.2); }
-        .logo { padding: 0; background: white; border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; min-height: 90px; }
+        .logo { padding: 15px; background: white; border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 90px; color: #333; text-align: center; }
+        .logo h2 { margin: 0; font-size: 16px; font-weight: bold; color: var(--primary); }
+        .logo span { font-size: 11px; color: #666; }
         .menu { flex: 1; padding-top: 10px; overflow-y: auto; }
         .menu-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; transition: 0.2s; border-left: 4px solid transparent; font-size: 14px; }
         .menu-item:hover { background: rgba(255,255,255,0.1); }
         .menu-item.active { background: rgba(255,255,255,0.2); border-left-color: #fff; font-weight: 600; }
         .menu-item i { width: 25px; font-size: 16px; margin-right: 10px; text-align: center; }
         
-        .dev-footer { padding: 8px; text-align: center; font-size: 10px; color: rgba(255,255,255,0.5); border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.1); }
+        .dev-footer { padding: 8px; text-align: center; font-size: 11px; color: rgba(255,255,255,0.8); border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.1); }
 
         /* --- MAIN --- */
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -52,8 +54,20 @@
         .btn-blue { background: var(--blue); } .btn-blue:hover { background: #005a9e; }
         .btn-orange { background: var(--warning); color: #333; }
 
-        /* DASHBOARD GRID */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        /* DASHBOARD GRID - UPDATED FOR 3 COLUMNS */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); /* FORCED 3 COLUMNS */
+            gap: 15px; 
+        }
+        /* Mobile responsive check */
+        @media (max-width: 900px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
         .card { background: white; padding: 15px; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .card h4 { margin: 0 0 5px; font-size: 11px; color: #666; text-transform: uppercase; }
         .card .val { font-size: 18px; font-weight: bold; color: #333; transition: 0.3s; }
@@ -75,18 +89,14 @@
         .modal { background: white; padding: 25px; width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-radius: 4px; max-height: 90vh; overflow-y: auto;}
 
         .low-stock { background-color: #ffebee; color: #c62828; }
+        .expired-stock { background-color: #333; color: #fff; }
+        .expired-stock td { border-color: #555; }
         
         /* --- FIXED PRINT STYLES --- */
         @media print {
-            /* Hide EVERYTHING by default */
             .sidebar, .top-bar, .content, .modal-overlay, .dev-footer { display: none !important; }
-            
-            /* Show ONLY Print Area */
             #print-area { display: block !important; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; padding: 20px; z-index: 9999; }
-            
-            /* Remove Browser Headers/Footers (File path, Date) */
             @page { margin: 0; size: auto; }
-            
             body { margin: 1cm; }
         }
         #print-area { display: none; }
@@ -104,7 +114,8 @@
 
     <div class="sidebar">
         <div class="logo">
-            <img src="app/1.jpeg" alt="Nasir & Brother's" style="max-width: 90%; height: auto; max-height: 80px; display: block; border-radius: 4px;">
+            <h2>Nasir & Brother's</h2>
+            <span>Prop: Nasir Ahmad</span>
         </div>
         
         <div class="menu">
@@ -118,6 +129,7 @@
             <div class="menu-item" onclick="nav('stock-sungro')"><i class="fas fa-seedling"></i> Sungro Stock</div>
             <div class="menu-item" onclick="nav('stock-fmc')"><i class="fas fa-flask"></i> FMC Stock</div>
             <div class="menu-item" onclick="nav('stock-misc')"><i class="fas fa-cube"></i> Misc Stock</div>
+            <div class="menu-item" onclick="nav('stock-expired')"><i class="fas fa-calendar-times" style="color:#ff8888;"></i> Expired Stock</div>
             <div style="border-top:1px solid rgba(255,255,255,0.1); margin: 5px 0;"></div>
             <div class="menu-item" onclick="nav('expenses')"><i class="fas fa-receipt"></i> Expenses</div>
             <div class="menu-item" onclick="nav('dues')"><i class="fas fa-hand-holding-usd"></i> Company Dues</div>
@@ -125,7 +137,8 @@
         </div>
 
         <div class="dev-footer">
-            Made by Fahad | 0310-4333021
+            Nasir & Brother's ERP<br>
+            0301-7442701 | 0316-4666517
         </div>
     </div>
 
@@ -139,7 +152,9 @@
 
             <div id="dash" class="tab-section active">
                 <div style="text-align:center; padding: 15px; background: white; border-bottom: 1px solid #ddd; margin-bottom: 20px; border-radius: 5px;">
-                    <img src="5.jpeg" style="max-height: 250px; max-width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                    <img src="5.jpeg" style="max-height: 250px; max-width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" onerror="this.style.display='none'">
+                    <h2 style="margin:10px 0 0 0; color:#2b579a;">Nasir & Brother's</h2>
+                    <p style="margin:0; color:#666;">Main Chowk Tatay Pur, Multan</p>
                 </div>
 
                 <div style="padding:0 20px 20px 20px;">
@@ -153,12 +168,15 @@
                         <div class="card" style="border-left: 4px solid #2b579a;"><h4>1. FMC Stock Value</h4><div class="val blurred" id="d-fmc">0</div></div>
                         <div class="card" style="border-left: 4px solid #107c41;"><h4>2. Sungro Stock Value</h4><div class="val blurred" id="d-sungro">0</div></div>
                         <div class="card" style="border-left: 4px solid #ffaa44;"><h4>3. Misc Stock Value</h4><div class="val blurred" id="d-misc">0</div></div>
+                        
                         <div class="card" style="border-left: 4px solid #333;"><h4>4. Total Stock Value</h4><div class="val blurred" id="d-total-stock">0</div></div>
                         <div class="card" style="border-left: 4px solid #0078d4;"><h4>5. Total Sales</h4><div class="val blurred" id="d-sale">0</div></div>
                         <div class="card" style="border-left: 4px solid #c50f1f;"><h4>6. Total Expense</h4><div class="val blurred" id="d-exp">0</div></div>
+                        
                         <div class="card" style="border-left: 4px solid #c50f1f;"><h4>7. Market Receivable</h4><div class="val blurred" id="d-market-due" style="color:red">0</div></div>
                         <div class="card" style="border-left: 4px solid green;"><h4>8. Est. Profit (Net)</h4><div class="val blurred" id="d-prof" style="color:green">0</div></div>
                         <div class="card" style="border-left: 4px solid #800000;"><h4>9. Company Dues</h4><div class="val blurred" id="d-comp-due">0</div></div>
+                        
                         <div class="card" style="border-left: 4px solid #555;"><h4>10. Other Dues</h4><div class="val blurred" id="d-other-due">0</div></div>
                     </div>
                 </div>
@@ -392,8 +410,9 @@
 
     <div id="print-area">
         <div style="text-align:center; border-bottom:2px solid #333; padding-bottom:10px; margin-bottom:20px;">
-            <img src="6.png" style="max-width: 100%; max-height: 120px; display: block; margin: 0 auto;">
-            <p style="margin: 5px 0 0 0; font-weight: bold;">Grain Market, Burewala | 0300-1234567</p>
+            <h1 style="margin: 0; font-size: 28px; text-transform: uppercase;">Nasir & Brother's</h1>
+            <p style="margin: 2px 0; font-weight: bold; font-size: 14px;">Main Chowk Tatay Pur, Multan</p>
+            <p style="margin: 2px 0; font-size: 12px;">Prop: Nasir Ahmad | 0301-7442701, 0316-4666517</p>
         </div>
         <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
             <div><strong>Bill To:</strong> <span id="pr-cust"></span><br><span id="pr-phone"></span></div>
@@ -425,7 +444,7 @@
 
         function init() {
             // Try to load previous data if exists
-            const s = localStorage.getItem('nasir_erp_v33') || localStorage.getItem('nasir_erp_v32') || localStorage.getItem('nasir_erp_v31') || localStorage.getItem('nasir_erp_v30');
+            const s = localStorage.getItem('nasir_erp_v33') || localStorage.getItem('nasir_erp_v32');
             if(s) {
                 try {
                     db = JSON.parse(s);
@@ -467,12 +486,19 @@
                 const logo = document.getElementById('stock-brand-logo');
                 const title = document.getElementById('stock-title');
                 
+                title.style.display = 'block';
+                logo.style.display = 'none';
+                title.style.color = "var(--primary)";
+
                 if (currentStockFilter === 'fmc') {
                     logo.src = 'app/2.jpeg'; logo.style.display = 'block'; title.style.display = 'none'; 
                 } else if (currentStockFilter === 'sungro') {
                     logo.src = 'app/3.jpeg'; logo.style.display = 'block'; title.style.display = 'none';
+                } else if (currentStockFilter === 'expired') {
+                    title.innerText = "EXPIRED STOCK ALERT";
+                    title.style.color = "red";
                 } else {
-                    logo.style.display = 'none'; title.style.display = 'block'; title.innerText = (currentStockFilter === 'misc') ? "Misc Stock" : "Inventory";
+                    title.innerText = (currentStockFilter === 'misc') ? "Misc Stock" : "Inventory";
                 }
                 renderStock();
             } else {
@@ -644,23 +670,59 @@
             saveDB(); closeModal(); refreshAll();
         }
 
-        // --- STOCK & OTHER ---
+        // --- STOCK & EXPIRED LOGIC ---
+        function isExpired(dateStr) {
+            if(!dateStr) return false;
+            const today = new Date();
+            today.setHours(0,0,0,0); // Clear time part for accurate comparison
+            const exp = new Date(dateStr);
+            return exp < today;
+        }
+
         function renderStock() { 
             const b = document.getElementById('st-body'); b.innerHTML = ''; 
             const q = document.getElementById('st-search').value.toLowerCase(); 
+            
             let data = db.stock; 
-            if(currentStockFilter !== 'all') data = db.stock.filter(s => (s.cat || 'Misc').toLowerCase() === currentStockFilter); 
+
+            // FILTER LOGIC
+            if(currentStockFilter === 'expired') {
+                data = db.stock.filter(s => isExpired(s.exp));
+            } else if(currentStockFilter !== 'all') {
+                data = db.stock.filter(s => (s.cat || 'Misc').toLowerCase() === currentStockFilter); 
+            }
+
             data.forEach(s => { 
                 if(s.name.toLowerCase().includes(q)) { 
-                    let status = s.qty < 10 ? '<span style="color:red; font-weight:bold">Low Stock</span>' : 'OK'; 
-                    let rowClass = s.qty < 10 ? 'low-stock' : ''; 
-                    b.innerHTML += `<tr class="${rowClass}"><td>${s.batch || '-'}</td><td>${s.name}</td><td>${s.cat || 'Misc'}</td><td>${s.cost}</td><td>${s.price}</td><td>${s.exp || '-'}</td><td>${s.qty}</td><td>${(s.qty*s.price).toLocaleString()}</td><td><button class="btn btn-blue" onclick="editStock(${s.id})">Edit</button></td></tr>`; 
+                    const expired = isExpired(s.exp);
+                    let rowClass = '';
+                    let status = 'OK';
+
+                    if (expired) {
+                        rowClass = 'expired-stock';
+                        status = 'EXPIRED';
+                    } else if (s.qty < 10) {
+                        rowClass = 'low-stock';
+                        status = 'LOW';
+                    }
+
+                    b.innerHTML += `<tr class="${rowClass}">
+                        <td>${s.batch || '-'}</td>
+                        <td>${s.name} ${expired ? '(EXP)' : ''}</td>
+                        <td>${s.cat || 'Misc'}</td>
+                        <td>${s.cost}</td>
+                        <td>${s.price}</td>
+                        <td>${s.exp || '-'}</td>
+                        <td>${s.qty}</td>
+                        <td>${(s.qty*s.price).toLocaleString()}</td>
+                        <td><button class="btn btn-blue" onclick="editStock(${s.id})">Edit</button></td>
+                    </tr>`; 
                 } 
             }); 
         }
         
         function openNewStockModal() {
-            document.getElementById('ns-id').value = ""; // Clear ID for new
+            document.getElementById('ns-id').value = ""; 
             document.getElementById('ns-name').value = "";
             document.getElementById('ns-cost').value = "";
             document.getElementById('ns-price').value = "";
@@ -673,7 +735,7 @@
         function editStock(id) {
             const s = db.stock.find(x => x.id == id);
             if(!s) return;
-            document.getElementById('ns-id').value = s.id; // Set ID
+            document.getElementById('ns-id').value = s.id; 
             document.getElementById('ns-cat').value = s.cat || 'Misc';
             document.getElementById('ns-name').value = s.name;
             document.getElementById('ns-cost').value = s.cost;
